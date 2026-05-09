@@ -1,0 +1,851 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>안마의자 힐링카페 시뮬레이션 대시보드 — 아티스포럼 321호</title>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+<style>
+  :root {
+    --bg: #f5f6f8;
+    --card-bg: #ffffff;
+    --text: #1a1c1e;
+    --text-sub: #555a62;
+    --border: #e1e3e6;
+    --accent: #2f7dff;
+    --accent-soft: #e9f1ff;
+    --positive: #15a36e;
+    --negative: #d83b3b;
+    --neutral: #b48a00;
+    --slider-track: #d6d9de;
+    --slider-disabled: #ebedf0;
+    --shadow: 0 2px 8px rgba(0,0,0,0.04);
+  }
+  [data-theme="dark"] {
+    --bg: #14171c;
+    --card-bg: #1d2128;
+    --text: #ebedf0;
+    --text-sub: #a4abb5;
+    --border: #2a2f38;
+    --accent: #4d92ff;
+    --accent-soft: #1c2a44;
+    --positive: #2dc985;
+    --negative: #ff6363;
+    --neutral: #f0b631;
+    --slider-track: #2a2f38;
+    --slider-disabled: #1a1d22;
+    --shadow: 0 2px 8px rgba(0,0,0,0.3);
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    padding: 0;
+    font-family: 'Pretendard', 'Segoe UI', -apple-system, BlinkMacSystemFont, sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    transition: background 0.2s, color 0.2s;
+    line-height: 1.5;
+  }
+  header {
+    background: var(--card-bg);
+    border-bottom: 1px solid var(--border);
+    padding: 16px 24px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 12px;
+    position: sticky;
+    top: 0;
+    z-index: 10;
+    box-shadow: var(--shadow);
+  }
+  .header-title { display: flex; flex-direction: column; }
+  .header-title h1 {
+    font-size: 18px;
+    margin: 0;
+    font-weight: 700;
+  }
+  .header-title .sub {
+    font-size: 12px;
+    color: var(--text-sub);
+    margin-top: 2px;
+  }
+  .header-actions { display: flex; align-items: center; gap: 12px; }
+  .btn {
+    padding: 8px 14px;
+    border: 1px solid var(--border);
+    background: var(--card-bg);
+    color: var(--text);
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 13px;
+    transition: all 0.15s;
+  }
+  .btn:hover { background: var(--accent-soft); border-color: var(--accent); }
+  .container {
+    max-width: 1280px;
+    margin: 0 auto;
+    padding: 20px 16px;
+    display: grid;
+    grid-template-columns: 380px 1fr;
+    gap: 20px;
+  }
+  @media (max-width: 880px) {
+    .container { grid-template-columns: 1fr; padding: 16px 12px; }
+  }
+  .card {
+    background: var(--card-bg);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 18px;
+    box-shadow: var(--shadow);
+  }
+  .card h2 {
+    font-size: 15px;
+    margin: 0 0 16px;
+    padding-bottom: 10px;
+    border-bottom: 1px solid var(--border);
+    font-weight: 700;
+  }
+  .input-group {
+    margin-bottom: 16px;
+  }
+  .input-label {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    font-size: 13px;
+    color: var(--text-sub);
+    margin-bottom: 6px;
+  }
+  .input-label .value {
+    font-weight: 700;
+    color: var(--text);
+    font-size: 14px;
+  }
+  .input-label .disabled {
+    color: var(--text-sub);
+    font-style: italic;
+  }
+  input[type="range"] {
+    width: 100%;
+    -webkit-appearance: none;
+    appearance: none;
+    height: 4px;
+    background: var(--slider-track);
+    border-radius: 2px;
+    outline: none;
+  }
+  input[type="range"]::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    appearance: none;
+    width: 16px;
+    height: 16px;
+    background: var(--accent);
+    border-radius: 50%;
+    cursor: pointer;
+    border: 2px solid var(--card-bg);
+    box-shadow: 0 1px 3px rgba(0,0,0,0.2);
+  }
+  input[type="range"]::-moz-range-thumb {
+    width: 16px;
+    height: 16px;
+    background: var(--accent);
+    border-radius: 50%;
+    cursor: pointer;
+    border: 2px solid var(--card-bg);
+  }
+  input[type="range"]:disabled {
+    background: var(--slider-disabled);
+    cursor: not-allowed;
+  }
+  input[type="range"]:disabled::-webkit-slider-thumb {
+    background: var(--text-sub);
+    cursor: not-allowed;
+  }
+  .input-row { display: flex; gap: 8px; }
+  .input-row .input-group { flex: 1; }
+  .pill {
+    display: inline-block;
+    padding: 2px 8px;
+    background: var(--accent-soft);
+    color: var(--accent);
+    font-size: 11px;
+    border-radius: 4px;
+    margin-left: 6px;
+    font-weight: 600;
+  }
+  .preset-buttons {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 6px;
+    margin-bottom: 16px;
+  }
+  .preset-btn {
+    font-size: 12px;
+    padding: 8px 6px;
+    border: 1px solid var(--border);
+    background: var(--card-bg);
+    color: var(--text);
+    border-radius: 6px;
+    cursor: pointer;
+    transition: all 0.15s;
+  }
+  .preset-btn:hover { background: var(--accent-soft); border-color: var(--accent); }
+  .preset-btn .label { font-weight: 700; display: block; }
+  .preset-btn .desc { font-size: 10px; color: var(--text-sub); margin-top: 2px; }
+  .summary-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 12px;
+    margin-bottom: 16px;
+  }
+  .summary-tile {
+    padding: 12px 14px;
+    border-radius: 8px;
+    background: var(--bg);
+    border: 1px solid var(--border);
+  }
+  .summary-tile .tile-label {
+    font-size: 11px;
+    color: var(--text-sub);
+    margin-bottom: 4px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+  }
+  .summary-tile .tile-value {
+    font-size: 20px;
+    font-weight: 700;
+  }
+  .summary-tile .tile-sub { font-size: 11px; color: var(--text-sub); margin-top: 2px; }
+  .pos { color: var(--positive); }
+  .neg { color: var(--negative); }
+  .neutral { color: var(--neutral); }
+  .chart-wrap {
+    position: relative;
+    height: 280px;
+    margin-bottom: 18px;
+  }
+  .note {
+    font-size: 11px;
+    color: var(--text-sub);
+    line-height: 1.5;
+    background: var(--bg);
+    padding: 10px 12px;
+    border-radius: 6px;
+    border: 1px solid var(--border);
+  }
+  .note b { color: var(--text); }
+  .footer {
+    text-align: center;
+    padding: 24px 16px;
+    color: var(--text-sub);
+    font-size: 11px;
+    line-height: 1.7;
+  }
+</style>
+</head>
+<body>
+<header>
+  <div class="header-title">
+    <h1>안마의자 힐링카페 시뮬레이션</h1>
+    <span class="sub">아티스포럼 321호 · 전용 30.56평 · 임대료 0원 (본인 소유)</span>
+  </div>
+  <div class="header-actions">
+    <button class="btn" id="resetBtn" title="기본값으로 리셋">↻ 리셋</button>
+    <button class="btn" id="themeBtn" title="다크모드 토글">🌙 다크</button>
+  </div>
+</header>
+
+<div class="container">
+  <!-- 입력 카드 -->
+  <div>
+    <div class="card">
+      <h2>프리셋 (보고서 기준값)</h2>
+      <div class="preset-buttons">
+        <button class="preset-btn" data-preset="B">
+          <span class="label">[B] ChatGPT 보수</span>
+          <span class="desc">8대 / 18% / 8,000원</span>
+        </button>
+        <button class="preset-btn" data-preset="A">
+          <span class="label">[A] Claude 현실</span>
+          <span class="desc">9대 / 50% / 12,000원</span>
+        </button>
+        <button class="preset-btn" data-preset="C">
+          <span class="label">[C] Gemini 현실</span>
+          <span class="desc">12대 / 25% / 13,000원</span>
+        </button>
+        <button class="preset-btn" data-preset="D">
+          <span class="label">[D] Perplexity 현실</span>
+          <span class="desc">8대 / 27% / 7,000원</span>
+        </button>
+      </div>
+    </div>
+
+    <div class="card" style="margin-top: 16px;">
+      <h2>운영 조건</h2>
+
+      <div class="input-group">
+        <div class="input-label">
+          <span>좌석 수</span>
+          <span class="value"><span id="seatsVal">8</span> 대</span>
+        </div>
+        <input type="range" id="seats" min="4" max="14" step="1" value="8">
+      </div>
+
+      <div class="input-group">
+        <div class="input-label">
+          <span>평균 가동률</span>
+          <span class="value"><span id="utilizationVal">18</span> %</span>
+        </div>
+        <input type="range" id="utilization" min="5" max="80" step="1" value="18">
+      </div>
+
+      <div class="input-group">
+        <div class="input-label">
+          <span>회당 요금</span>
+          <span class="value"><span id="priceVal">8,000</span> 원</span>
+        </div>
+        <input type="range" id="price" min="3000" max="20000" step="500" value="8000">
+      </div>
+
+      <div class="input-row">
+        <div class="input-group">
+          <div class="input-label">
+            <span>1회 이용시간</span>
+            <span class="value"><span id="durationVal">50</span> 분</span>
+          </div>
+          <input type="range" id="duration" min="20" max="90" step="10" value="50">
+        </div>
+        <div class="input-group">
+          <div class="input-label">
+            <span>운영시간/일</span>
+            <span class="value"><span id="hoursVal">14</span> h</span>
+          </div>
+          <input type="range" id="hours" min="8" max="24" step="1" value="14">
+        </div>
+      </div>
+
+      <div class="input-row">
+        <div class="input-group">
+          <div class="input-label">
+            <span>월 영업일</span>
+            <span class="value"><span id="daysVal">30</span> 일</span>
+          </div>
+          <input type="range" id="days" min="20" max="31" step="1" value="30">
+        </div>
+        <div class="input-group">
+          <div class="input-label">
+            <span>변동비율</span>
+            <span class="value"><span id="varCostVal">10</span> %</span>
+          </div>
+          <input type="range" id="varCost" min="0" max="30" step="1" value="10">
+        </div>
+      </div>
+    </div>
+
+    <div class="card" style="margin-top: 16px;">
+      <h2>월 고정비</h2>
+
+      <div class="input-group">
+        <div class="input-label">
+          <span>임대료 <span class="pill">고정 0원</span></span>
+          <span class="value disabled">0 원</span>
+        </div>
+        <input type="range" disabled value="0">
+      </div>
+
+      <div class="input-group">
+        <div class="input-label">
+          <span>관리비</span>
+          <span class="value"><span id="manageVal">50</span> 만원</span>
+        </div>
+        <input type="range" id="manage" min="0" max="150" step="5" value="50">
+      </div>
+
+      <div class="input-group">
+        <div class="input-label">
+          <span>인건비/무인 운영비</span>
+          <span class="value"><span id="laborVal">0</span> 만원</span>
+        </div>
+        <input type="range" id="labor" min="0" max="300" step="5" value="0">
+      </div>
+
+      <div class="input-group">
+        <div class="input-label">
+          <span>안마의자 렌탈 (대당)</span>
+          <span class="value"><span id="rentalVal">11</span> 만원</span>
+        </div>
+        <input type="range" id="rental" min="0" max="25" step="1" value="11">
+        <div style="font-size:11px;color:var(--text-sub);margin-top:4px;">
+          좌석 수 × 대당 렌탈 = <span id="rentalTotalDisplay">88</span> 만원/월
+        </div>
+      </div>
+
+      <div class="input-row">
+        <div class="input-group">
+          <div class="input-label">
+            <span>광고비</span>
+            <span class="value"><span id="adVal">30</span></span>
+          </div>
+          <input type="range" id="ad" min="0" max="100" step="5" value="30">
+        </div>
+        <div class="input-group">
+          <div class="input-label">
+            <span>공과금</span>
+            <span class="value"><span id="utilVal">60</span></span>
+          </div>
+          <input type="range" id="util" min="0" max="150" step="5" value="60">
+        </div>
+      </div>
+
+      <div class="input-row">
+        <div class="input-group">
+          <div class="input-label">
+            <span>소모품·기타</span>
+            <span class="value"><span id="suppliesVal">30</span></span>
+          </div>
+          <input type="range" id="supplies" min="0" max="100" step="5" value="30">
+        </div>
+        <div class="input-group">
+          <div class="input-label">
+            <span>무인 솔루션·통신</span>
+            <span class="value"><span id="iotVal">30</span></span>
+          </div>
+          <input type="range" id="iot" min="0" max="100" step="5" value="30">
+        </div>
+      </div>
+    </div>
+
+    <div class="card" style="margin-top: 16px;">
+      <h2>초기 투자비 (회수 계산용)</h2>
+      <div class="input-group">
+        <div class="input-label">
+          <span>총 초기 투자비</span>
+          <span class="value"><span id="capexVal">8,000</span> 만원</span>
+        </div>
+        <input type="range" id="capex" min="3000" max="20000" step="500" value="8000">
+        <div style="font-size:11px;color:var(--text-sub);margin-top:6px;">
+          [A]Claude: 7,400만~1.5억 / [B]ChatGPT: 5,500만~1억 / [C]Gemini: 9,500만~1억 / [D]Perplexity: 9,600만
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 출력 카드 -->
+  <div>
+    <div class="card">
+      <h2>요약 — 월 손익</h2>
+      <div class="summary-grid">
+        <div class="summary-tile">
+          <div class="tile-label">일 회전 가능 횟수</div>
+          <div class="tile-value" id="dailyTurnsVal">—</div>
+          <div class="tile-sub">좌석당 <span id="turnsPerSeat">—</span>회</div>
+        </div>
+        <div class="summary-tile">
+          <div class="tile-label">월 매출</div>
+          <div class="tile-value pos" id="revenueVal">—</div>
+          <div class="tile-sub">변동비 차감 전</div>
+        </div>
+        <div class="summary-tile">
+          <div class="tile-label">월 비용 (고정+변동)</div>
+          <div class="tile-value neg" id="costVal">—</div>
+          <div class="tile-sub">고정 <span id="fixedCostVal">—</span> + 변동 <span id="varCostVal2">—</span></div>
+        </div>
+        <div class="summary-tile">
+          <div class="tile-label">월 순이익</div>
+          <div class="tile-value" id="profitVal">—</div>
+          <div class="tile-sub">영업이익률 <span id="marginVal">—</span></div>
+        </div>
+        <div class="summary-tile">
+          <div class="tile-label">BEP 회수 기간</div>
+          <div class="tile-value" id="bepVal">—</div>
+          <div class="tile-sub">초기투자 ÷ 월순익</div>
+        </div>
+        <div class="summary-tile">
+          <div class="tile-label">손익 상태</div>
+          <div class="tile-value" id="statusVal">—</div>
+          <div class="tile-sub" id="statusSubVal">—</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="card" style="margin-top: 16px;">
+      <h2>월 매출·비용·순익 비교</h2>
+      <div class="chart-wrap"><canvas id="barChart"></canvas></div>
+    </div>
+
+    <div class="card" style="margin-top: 16px;">
+      <h2>가동률 변화에 따른 월 순익 시뮬레이션 (현재 다른 조건 고정)</h2>
+      <div class="chart-wrap"><canvas id="lineChart"></canvas></div>
+    </div>
+
+    <div class="card" style="margin-top: 16px;">
+      <h2>비용 구성 (월 고정비 항목별)</h2>
+      <div class="chart-wrap"><canvas id="doughnutChart"></canvas></div>
+    </div>
+
+    <div class="card" style="margin-top: 16px;">
+      <h2>참고</h2>
+      <div class="note">
+        <b>전제</b>: 임대료 0원 (본인 소유). 변동비는 매출 대비 비율(음료원가·소모품)로 계산.<br>
+        <b>일 회전수</b> = 좌석 수 × (운영시간 × 60 ÷ (이용시간 + 청소 10분)) × 가동률<br>
+        <b>BEP</b> = 초기투자비 ÷ 월 순이익 (월 순이익이 양수일 때만 표시)<br>
+        <b>임의 평균 없음</b>: 4개 보고서 매출 추정 차이가 크므로 (보수 [B] 553만 vs 현실 [A][C] 1,600만대), 프리셋으로 직접 비교하세요.<br>
+        <b>다중이용업소 면적</b>: 30.56평 = 101.02㎡ → 100㎡ 기준 1.02㎡ 초과. 100㎡ 미만 설계 시 인테리어 1,000~3,000만원 절감 가능.
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="footer">
+  안마의자 힐링카페 통합 시뮬레이션 대시보드 · 통합본: <code>master_report.md</code> · 2026-05-09<br>
+  슬라이더 값은 <code>localStorage</code>에 자동 저장됩니다 · 임대료는 0원 고정
+</div>
+
+<script>
+  const STORAGE_KEY = 'massage_cafe_dashboard_v1';
+  const THEME_KEY = 'massage_cafe_theme';
+
+  // 입력 슬라이더 ID 목록
+  const inputs = ['seats','utilization','price','duration','hours','days','varCost',
+                  'manage','labor','rental','ad','util','supplies','iot','capex'];
+
+  const defaults = {
+    seats: 8, utilization: 18, price: 8000, duration: 50, hours: 14, days: 30, varCost: 10,
+    manage: 50, labor: 0, rental: 11, ad: 30, util: 60, supplies: 30, iot: 30, capex: 8000
+  };
+
+  const presets = {
+    A: { seats: 9, utilization: 50, price: 12000, duration: 50, hours: 12, days: 30, varCost: 15,
+         manage: 30, labor: 90, rental: 7, ad: 50, util: 80, supplies: 50, iot: 30, capex: 9000 },
+    B: { seats: 8, utilization: 18, price: 8000, duration: 50, hours: 14, days: 30, varCost: 10,
+         manage: 50, labor: 0, rental: 11, ad: 30, util: 60, supplies: 30, iot: 30, capex: 8000 },
+    C: { seats: 12, utilization: 25, price: 13000, duration: 50, hours: 14, days: 30, varCost: 12,
+         manage: 61, labor: 70, rental: 11, ad: 30, util: 45, supplies: 55, iot: 25, capex: 9700 },
+    D: { seats: 8, utilization: 27, price: 7000, duration: 30, hours: 15, days: 30, varCost: 10,
+         manage: 65, labor: 0, rental: 18, ad: 35, util: 75, supplies: 15, iot: 8, capex: 9600 }
+  };
+
+  // ----- 상태 로드/저장 -----
+  function loadState() {
+    try {
+      const saved = JSON.parse(localStorage.getItem(STORAGE_KEY) || '{}');
+      inputs.forEach(id => {
+        const val = saved[id] !== undefined ? saved[id] : defaults[id];
+        const el = document.getElementById(id);
+        if (el) el.value = val;
+      });
+    } catch(e) {
+      console.error('state load failed', e);
+    }
+  }
+  function saveState() {
+    const state = {};
+    inputs.forEach(id => {
+      const el = document.getElementById(id);
+      if (el) state[id] = parseFloat(el.value);
+    });
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+  }
+
+  // ----- 테마 -----
+  function applyTheme(theme) {
+    document.documentElement.dataset.theme = theme;
+    document.getElementById('themeBtn').textContent = theme === 'dark' ? '☀️ 라이트' : '🌙 다크';
+    localStorage.setItem(THEME_KEY, theme);
+    if (window.barChart) updateAllCharts();
+  }
+  function toggleTheme() {
+    const next = document.documentElement.dataset.theme === 'dark' ? 'light' : 'dark';
+    applyTheme(next);
+  }
+
+  // ----- 계산 -----
+  function getInputs() {
+    const v = {};
+    inputs.forEach(id => v[id] = parseFloat(document.getElementById(id).value));
+    return v;
+  }
+
+  function calc(inputs) {
+    const turnsPerSeatPerDay = (inputs.hours * 60) / (inputs.duration + 10);
+    const dailyTurns = inputs.seats * turnsPerSeatPerDay * (inputs.utilization / 100);
+    const dailyRev = dailyTurns * inputs.price;
+    const monthlyRev = dailyRev * inputs.days; // 원 단위
+    const fixedCost = (inputs.manage + inputs.labor + inputs.rental * inputs.seats +
+                       inputs.ad + inputs.util + inputs.supplies + inputs.iot) * 10000; // 만원→원
+    const variableCost = monthlyRev * (inputs.varCost / 100);
+    const totalCost = fixedCost + variableCost;
+    const profit = monthlyRev - totalCost;
+    const margin = monthlyRev > 0 ? (profit / monthlyRev) * 100 : 0;
+    const bepMonths = profit > 0 ? (inputs.capex * 10000) / profit : null; // capex 만원→원
+    return {
+      turnsPerSeatPerDay, dailyTurns, monthlyRev, fixedCost, variableCost,
+      totalCost, profit, margin, bepMonths
+    };
+  }
+
+  function fmt(n) {
+    if (n === null || isNaN(n)) return '—';
+    if (Math.abs(n) >= 100000000) return (n / 100000000).toFixed(2) + '억';
+    if (Math.abs(n) >= 10000) return Math.round(n / 10000).toLocaleString() + '만';
+    return Math.round(n).toLocaleString();
+  }
+
+  function fmtMan(won) {
+    return Math.round(won / 10000).toLocaleString() + '만원';
+  }
+
+  // ----- UI 업데이트 -----
+  function updateLabels() {
+    const v = getInputs();
+    document.getElementById('seatsVal').textContent = v.seats;
+    document.getElementById('utilizationVal').textContent = v.utilization;
+    document.getElementById('priceVal').textContent = v.price.toLocaleString();
+    document.getElementById('durationVal').textContent = v.duration;
+    document.getElementById('hoursVal').textContent = v.hours;
+    document.getElementById('daysVal').textContent = v.days;
+    document.getElementById('varCostVal').textContent = v.varCost;
+    document.getElementById('manageVal').textContent = v.manage;
+    document.getElementById('laborVal').textContent = v.labor;
+    document.getElementById('rentalVal').textContent = v.rental;
+    document.getElementById('adVal').textContent = v.ad;
+    document.getElementById('utilVal').textContent = v.util;
+    document.getElementById('suppliesVal').textContent = v.supplies;
+    document.getElementById('iotVal').textContent = v.iot;
+    document.getElementById('capexVal').textContent = v.capex.toLocaleString();
+    document.getElementById('rentalTotalDisplay').textContent = (v.rental * v.seats).toLocaleString();
+  }
+
+  function updateSummary() {
+    const v = getInputs();
+    const r = calc(v);
+    document.getElementById('dailyTurnsVal').textContent = r.dailyTurns.toFixed(1) + ' 회';
+    document.getElementById('turnsPerSeat').textContent = r.turnsPerSeatPerDay.toFixed(1);
+    document.getElementById('revenueVal').textContent = fmtMan(r.monthlyRev);
+    document.getElementById('costVal').textContent = fmtMan(r.totalCost);
+    document.getElementById('fixedCostVal').textContent = fmtMan(r.fixedCost);
+    document.getElementById('varCostVal2').textContent = fmtMan(r.variableCost);
+
+    const profitEl = document.getElementById('profitVal');
+    profitEl.textContent = fmtMan(r.profit);
+    profitEl.className = 'tile-value ' + (r.profit > 0 ? 'pos' : (r.profit < 0 ? 'neg' : 'neutral'));
+
+    document.getElementById('marginVal').textContent = r.margin.toFixed(1) + '%';
+
+    const bepEl = document.getElementById('bepVal');
+    if (r.bepMonths === null) {
+      bepEl.textContent = '적자';
+      bepEl.className = 'tile-value neg';
+    } else if (r.bepMonths > 999) {
+      bepEl.textContent = '999+ 개월';
+      bepEl.className = 'tile-value neutral';
+    } else {
+      bepEl.textContent = r.bepMonths.toFixed(1) + ' 개월';
+      bepEl.className = 'tile-value ' + (r.bepMonths < 24 ? 'pos' : (r.bepMonths < 60 ? 'neutral' : 'neg'));
+    }
+
+    const statusEl = document.getElementById('statusVal');
+    const statusSub = document.getElementById('statusSubVal');
+    if (r.profit > 0 && r.bepMonths !== null && r.bepMonths < 18) {
+      statusEl.textContent = '🟢 양호';
+      statusEl.className = 'tile-value pos';
+      statusSub.textContent = '안정적 흑자 + 빠른 회수';
+    } else if (r.profit > 0 && r.bepMonths !== null && r.bepMonths < 60) {
+      statusEl.textContent = '🟡 보통';
+      statusEl.className = 'tile-value neutral';
+      statusSub.textContent = '흑자이나 회수 다소 김';
+    } else if (r.profit > 0) {
+      statusEl.textContent = '🟠 한계';
+      statusEl.className = 'tile-value neutral';
+      statusSub.textContent = '흑자이나 회수 60개월 이상';
+    } else {
+      statusEl.textContent = '🔴 적자';
+      statusEl.className = 'tile-value neg';
+      statusSub.textContent = '비용 절감 또는 매출 증가 필요';
+    }
+  }
+
+  // ----- 차트 -----
+  function getChartColors() {
+    const isDark = document.documentElement.dataset.theme === 'dark';
+    return {
+      grid: isDark ? '#2a2f38' : '#e1e3e6',
+      text: isDark ? '#a4abb5' : '#555a62',
+      pos: isDark ? '#2dc985' : '#15a36e',
+      neg: isDark ? '#ff6363' : '#d83b3b',
+      accent: isDark ? '#4d92ff' : '#2f7dff',
+      neutral: isDark ? '#f0b631' : '#b48a00'
+    };
+  }
+
+  let barChart, lineChart, doughnutChart;
+
+  function buildCharts() {
+    const v = getInputs();
+    const r = calc(v);
+    const c = getChartColors();
+
+    Chart.defaults.font.family = "'Pretendard', 'Segoe UI', sans-serif";
+    Chart.defaults.color = c.text;
+
+    barChart = new Chart(document.getElementById('barChart'), {
+      type: 'bar',
+      data: {
+        labels: ['월 매출', '월 고정비', '월 변동비', '월 순이익'],
+        datasets: [{
+          data: [r.monthlyRev, r.fixedCost, r.variableCost, r.profit],
+          backgroundColor: [c.accent, c.neutral, c.neg, r.profit > 0 ? c.pos : c.neg],
+          borderRadius: 6
+        }]
+      },
+      options: {
+        responsive: true, maintainAspectRatio: false,
+        plugins: {
+          legend: { display: false },
+          tooltip: {
+            callbacks: { label: ctx => fmtMan(ctx.parsed.y) }
+          }
+        },
+        scales: {
+          y: {
+            grid: { color: c.grid },
+            ticks: { callback: v => fmtMan(v) }
+          },
+          x: { grid: { display: false } }
+        }
+      }
+    });
+
+    // Line chart: 가동률 변화
+    const utilRange = [];
+    const profitData = [];
+    for (let u = 5; u <= 80; u += 5) {
+      const inputs2 = { ...v, utilization: u };
+      const rr = calc(inputs2);
+      utilRange.push(u + '%');
+      profitData.push(rr.profit / 10000); // 만원
+    }
+    lineChart = new Chart(document.getElementById('lineChart'), {
+      type: 'line',
+      data: {
+        labels: utilRange,
+        datasets: [{
+          label: '월 순익 (만원)',
+          data: profitData,
+          borderColor: c.accent,
+          backgroundColor: c.accent + '33',
+          fill: true,
+          tension: 0.25,
+          pointRadius: 3,
+          pointBackgroundColor: c.accent,
+          pointHoverRadius: 5
+        }]
+      },
+      options: {
+        responsive: true, maintainAspectRatio: false,
+        plugins: {
+          legend: { display: false },
+          tooltip: {
+            callbacks: { label: ctx => ctx.parsed.y.toLocaleString() + ' 만원' }
+          }
+        },
+        scales: {
+          y: {
+            grid: { color: c.grid },
+            ticks: { callback: v => v.toLocaleString() + '만' }
+          },
+          x: { grid: { color: c.grid } }
+        }
+      }
+    });
+
+    // Doughnut: 비용 구성
+    const fixedItems = {
+      '관리비': v.manage, '인건비': v.labor, '안마의자 렌탈': v.rental * v.seats,
+      '광고비': v.ad, '공과금': v.util, '소모품·기타': v.supplies, '무인 솔루션·통신': v.iot
+    };
+    const labels = Object.keys(fixedItems).filter(k => fixedItems[k] > 0);
+    const data = labels.map(k => fixedItems[k]);
+    const palette = [c.accent, c.neutral, c.neg, c.pos, '#7c5cff', '#ff7d4a', '#19c2c8'];
+
+    doughnutChart = new Chart(document.getElementById('doughnutChart'), {
+      type: 'doughnut',
+      data: {
+        labels,
+        datasets: [{ data, backgroundColor: palette.slice(0, labels.length), borderWidth: 2,
+                     borderColor: getComputedStyle(document.documentElement).getPropertyValue('--card-bg').trim() }]
+      },
+      options: {
+        responsive: true, maintainAspectRatio: false,
+        plugins: {
+          legend: { position: 'right', labels: { font: { size: 11 } } },
+          tooltip: {
+            callbacks: { label: ctx => ctx.label + ': ' + ctx.parsed + '만원' }
+          }
+        }
+      }
+    });
+  }
+
+  function updateAllCharts() {
+    if (barChart) barChart.destroy();
+    if (lineChart) lineChart.destroy();
+    if (doughnutChart) doughnutChart.destroy();
+    buildCharts();
+  }
+
+  function updateAll() {
+    updateLabels();
+    updateSummary();
+    updateAllCharts();
+    saveState();
+  }
+
+  // ----- 이벤트 바인딩 -----
+  function init() {
+    // theme
+    const savedTheme = localStorage.getItem(THEME_KEY) || 'light';
+    applyTheme(savedTheme);
+    document.getElementById('themeBtn').addEventListener('click', toggleTheme);
+
+    // load state
+    loadState();
+
+    // bind sliders
+    inputs.forEach(id => {
+      document.getElementById(id).addEventListener('input', updateAll);
+    });
+
+    // presets
+    document.querySelectorAll('.preset-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const p = presets[btn.dataset.preset];
+        Object.keys(p).forEach(k => {
+          const el = document.getElementById(k);
+          if (el) el.value = p[k];
+        });
+        updateAll();
+      });
+    });
+
+    // reset
+    document.getElementById('resetBtn').addEventListener('click', () => {
+      Object.keys(defaults).forEach(k => {
+        const el = document.getElementById(k);
+        if (el) el.value = defaults[k];
+      });
+      updateAll();
+    });
+
+    updateLabels();
+    updateSummary();
+    buildCharts();
+  }
+
+  document.addEventListener('DOMContentLoaded', init);
+</script>
+</body>
+</html>
